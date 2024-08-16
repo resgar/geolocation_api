@@ -1,0 +1,56 @@
+---
+http_interactions:
+- request:
+    method: get
+    uri: http://api.ipstack.com/142.251.41.36?access_key=a3cf50175b7a3be0dde75e761b7383ee
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      User-Agent:
+      - Faraday v2.10.1
+      Accept-Encoding:
+      - gzip;q=1.0,deflate;q=0.6,identity;q=0.3
+      Accept:
+      - "*/*"
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Content-Type:
+      - application/json
+      Transfer-Encoding:
+      - chunked
+      Date:
+      - Fri, 16 Aug 2024 19:23:16 GMT
+      X-Apilayer-Transaction-Id:
+      - 2b8c8f22-a7c0-4c55-8665-c9b32ad4b619
+      Access-Control-Allow-Origin:
+      - "*"
+      Access-Control-Allow-Methods:
+      - GET, POST, HEAD, OPTIONS
+      Access-Control-Allow-Headers:
+      - "*"
+      X-Quota-Limit:
+      - '100'
+      X-Quota-Remaining:
+      - '69'
+      X-Increment-Usage:
+      - '1'
+      X-Request-Time:
+      - '0.034'
+    body:
+      encoding: UTF-8
+      string: '{"ip": "142.251.41.36", "type": "ipv4", "continent_code": "NA", "continent_name":
+        "North America", "country_code": "CA", "country_name": "Canada", "region_code":
+        "ON", "region_name": "Ontario", "city": "Toronto", "zip": "M3H 6A7", "latitude":
+        43.70317077636719, "longitude": -79.51219177246094, "msa": null, "dma": null,
+        "radius": null, "ip_routing_type": "fixed", "connection_type": "tx", "location":
+        {"geoname_id": 6167865, "capital": "Ottawa", "languages": [{"code": "en",
+        "name": "English", "native": "English"}, {"code": "fr", "name": "French",
+        "native": "Fran\u00e7ais"}], "country_flag": "https://assets.ipstack.com/flags/ca.svg",
+        "country_flag_emoji": "\ud83c\udde8\ud83c\udde6", "country_flag_emoji_unicode":
+        "U+1F1E8 U+1F1E6", "calling_code": "1", "is_eu": false}}'
+  recorded_at: Fri, 16 Aug 2024 19:23:16 GMT
+recorded_with: VCR 6.2.0
