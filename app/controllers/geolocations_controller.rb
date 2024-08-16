@@ -19,7 +19,9 @@ class GeolocationsController < ApplicationController
 
   # DELETE /geolocations/1
   def destroy
-    @geolocation.destroy!
+    unless @geolocation.destroy
+      render_unprocessable_entity(@geolocation.errors.full_messages)
+    end
   end
 
   private

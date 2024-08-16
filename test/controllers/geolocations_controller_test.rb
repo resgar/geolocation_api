@@ -23,7 +23,7 @@ class GeolocationsControllerTest < ActionDispatch::IntegrationTest
   test "should create geolocation with url" do
     url = "www.google.com"
     ip_address =  Resolv.getaddress(url)
-    VCR.use_cassette("geolocation_valid_url") do
+    VCR.use_cassette("geolocation_valid_url", match_requests_on: [ :method, :host ]) do
       assert_difference("Geolocation.count", 1) do
         post geolocations_url, params: { geolocation: { url: } }, as: :json
       end
@@ -106,28 +106,29 @@ class GeolocationsControllerTest < ActionDispatch::IntegrationTest
     assert_equal "Bad Request", json_response["errors"][0]["title"]
   end
 
-  # test "should not create geolocation with invalid API key" do
-  #   VCR.use_cassette('geolocation_invalid_ip') do
-  #     assert_no_difference('Geolocation.count') do
-  #       post geolocations_url, params: { geolocation: { ip: @invalid_ip } }, as: :json
-  #     end
+  test "should successfully delete geolocation" do
+    @geolocation = Geolocation.create!(
+      ip_address: @valid_ip,
+      details: {
+        "ip": @valid_ip,
+        "type": "ipv4"
+      }.to_json
+    )
 
-  #     assert_response :unprocessable_entity
-  #     json_response = JSON.parse(response.body)
-  #     assert_equal ['Failed to fetch geolocation data'], json_response['errors']
-  #   end
-  # end
+    assert_difference("Geolocation.count", -1) do
+      delete geolocations_url, params: { ip_address: @valid_ip }, as: :json
+    end
 
-  # test "should show geolocation" do
-  #   get geolocation_url(@geolocation), as: :json
-  #   assert_response :success
-  # end
+    assert_response :no_content
+  end
 
-  # test "should destroy geolocation" do
-  #   assert_difference("Geolocation.count", -1) do
-  #     delete geolocation_url(@geolocation), as: :json
-  #   end
+  test "should return not found when deleting non-existent geolocation" do
+    assert_no_difference("Geolocation.count") do
+      delete geolocations_url, params: { ip_address: @valid_ip }, as: :json
+    end
 
-  #   assert_response :no_content
-  # end
+    assert_response :not_found
+    json_response = JSON.parse(response.body)
+    assert_equal "Geolocation data not found for IP address #{@valid_ip}", json_response["errors"][0]["detail"]
+  end
 end
