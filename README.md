@@ -1,24 +1,81 @@
-# README
+# Geolocation API
 
-This README would normally document whatever steps are necessary to get the
-application up and running.
+## Installation
 
-Things you may want to cover:
+1. Create a .env file and add your IPStack API key:
+   ```bash
+   IPSTACK_API_KEY=your_ipstack_api_key
 
-* Ruby version
+2. Build the Docker image and start the containers:
+    ```bash
+   docker compose build
+   docker compose up
 
-* System dependencies
+3. Create the database and run migrations:
+    ```bash
+    docker compose run web rails db:create
+    docker compose run web rails db:migrate
 
-* Configuration
+## Testing
+    docker compose run web rails test
 
-* Database creation
+## API Endpoints
 
-* Database initialization
+### `POST /geolocations`
 
-* How to run the test suite
+Create a new geolocation record by IP address.
 
-* Services (job queues, cache servers, search engines, etc.)
+**Request Body:**
+  
+```json
+{
+    "geolocation": {
+        "ip_address": "142.251.41.78"
+    }
+}
+```
+Or by URL:  
+```json
+{
+    "geolocation": {
+        "url": "www.google.com"
+    }
+}
 
-* Deployment instructions
+```
 
-* ...
+### `GET /geolocations`
+
+Retrieve a geolocation record by IP address.
+
+**Request Body:**
+
+```json
+{
+  "ip_address": "142.251.41.78"
+}
+```
+Or by URL:  
+```json
+{
+  "url": "www.google.com"
+}
+```
+
+### `DELETE /geolocations`
+
+Delete a geolocation record by IP address:
+
+**Request Body:**
+
+```json
+{
+  "ip_address": "142.251.41.78"
+}
+```
+Or by URL:  
+```json
+{
+  "url": "www.google.com"
+}
+```
