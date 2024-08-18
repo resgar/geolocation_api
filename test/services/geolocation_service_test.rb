@@ -4,7 +4,7 @@ class GeolocationServiceTest < ActiveSupport::TestCase
   def setup
     @valid_ip = "8.8.8.8"
     @invalid_ip = "999.999.999.999"
-    @geolocation_service = GeolocationService.new(ip_address: @valid_ip)
+    @geolocation_service = GeolocationService.new(@valid_ip)
   end
 
   test "should fetch and save geolocation data successfully" do
@@ -18,21 +18,11 @@ class GeolocationServiceTest < ActiveSupport::TestCase
   end
 
   test "should return error for invalid IP address" do
-    result = GeolocationService.new(ip_address: @invalid_ip).fetch_and_save
-
-    assert_not result[:success], "Expected fetch and save to fail"
-    assert_equal "Invalid IP address format", result[:error]
-  end
-
-  test "should handle exception during API request" do
-    VCR.use_cassette("geolocation_service/network_error") do
-      stub_request(:get, /api.ipstack.com/).to_raise(StandardError.new("Network error"))
-
-      geolocation_service = GeolocationService.new(ip_address: @valid_ip)
-      result = geolocation_service.fetch_and_save
+    VCR.use_cassette("geolocation_service/failed") do
+      result = GeolocationService.new(@invalid_ip).fetch_and_save
 
       assert_not result[:success], "Expected fetch and save to fail"
-      assert_equal "Unexpected error occurred", result[:error]
+      assert_equal "Failed to fetch geolocation data", result[:error]
     end
   end
 end

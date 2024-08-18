@@ -1,0 +1,48 @@
+---
+http_interactions:
+- request:
+    method: get
+    uri: http://api.ipstack.com/999.999.999.999?access_key=a3cf50175b7a3be0dde75e761b7383ee
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      User-Agent:
+      - Faraday v2.10.1
+      Accept-Encoding:
+      - gzip;q=1.0,deflate;q=0.6,identity;q=0.3
+      Accept:
+      - "*/*"
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Content-Type:
+      - application/json
+      Transfer-Encoding:
+      - chunked
+      Date:
+      - Sun, 18 Aug 2024 18:08:14 GMT
+      X-Apilayer-Transaction-Id:
+      - 0bc22ffd-9bcd-47b5-9218-b95c8f086db3
+      Access-Control-Allow-Origin:
+      - "*"
+      Access-Control-Allow-Methods:
+      - GET, POST, HEAD, OPTIONS
+      Access-Control-Allow-Headers:
+      - "*"
+      X-Quota-Limit:
+      - '100'
+      X-Quota-Remaining:
+      - '36'
+      X-Increment-Usage:
+      - '1'
+      X-Request-Time:
+      - '0.042'
+    body:
+      encoding: UTF-8
+      string: '{"success":false,"error":{"code":106,"type":"invalid_ip_address","info":"The
+        IP Address supplied is invalid."}}'
+  recorded_at: Sun, 18 Aug 2024 18:08:14 GMT
+recorded_with: VCR 6.2.0
