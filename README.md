@@ -23,59 +23,51 @@
 
 ### `POST /geolocations`
 
-Create a new geolocation record by IP address.
+Create a new geolocation record by IP address or URL.
 
 **Request Body:**
   
 ```json
 {
-    "geolocation": {
-        "ip_address": "142.251.41.78"
-    }
+    "address": "142.251.41.78"
 }
 ```
-Or by URL:  
+Or:  
 ```json
 {
-    "geolocation": {
-        "url": "www.google.com"
-    }
+    "address": "www.google.com"
 }
 
 ```
 
 ### `GET /geolocations`
 
-Retrieve a geolocation record by IP address.
+Retrieve a geolocation record by IP address or URL.
 
-**Request Body:**
+**Query Parameters:**
 
-```json
-{
-  "ip_address": "142.251.41.78"
-}
-```
-Or by URL:  
-```json
-{
-  "url": "www.google.com"
-}
-```
+- address (required): The IP address or URL you want to retrieve geolocation data for.
+
+**Example Request:**
+
+   GET http://localhost:3000/geolocations?address=142.251.41.78
+
+   GET http://localhost:3000/geolocations?address=www.google.com
 
 ### `DELETE /geolocations`
 
-Delete a geolocation record by IP address:
+Delete a geolocation record by IP address or URL:
 
 **Request Body:**
 
 ```json
 {
-  "ip_address": "142.251.41.78"
+  "address": "142.251.41.78"
 }
 ```
-Or by URL:  
+Or:  
 ```json
 {
-  "url": "www.google.com"
+  "address": "www.google.com"
 }
 ```
