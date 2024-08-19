@@ -74,6 +74,7 @@ jobs:
           RAILS_ENV: test
           DATABASE_URL: postgres://postgres:postgres@localhost:5432
           # REDIS_URL: redis://localhost:6379/0
+          IPSTACK_API_KEY: ${{ secrets.IPSTACK_API_KEY }}
         run: bin/rails db:test:prepare test
 
       - name: Keep screenshots from failed system tests
