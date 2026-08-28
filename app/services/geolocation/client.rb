@@ -1,87 +1,31 @@
-require "faraday"
-
-# Talks to ipstack to resolve a query (IP address or hostname) into
-# geolocation attributes matching the Geolocation model.
-#
-# https://ipstack.com/documentation
-#
-# Note: the free ipstack plan only supports plain HTTP, not HTTPS.
+# Thin facade in front of the configured geolocation provider. This is the
+# single seam the rest of the app depends on, so swapping ipstack for another
+# provider later only means adding a class under Geolocation::Providers and
+# registering it below (or changing GEOLOCATION_PROVIDER).
 class Geolocation::Client
-  BASE_URL = "http://api.ipstack.com"
+  PROVIDERS = {
+    "ipstack" => "Geolocation::Providers::Ipstack"
+  }.freeze
 
   attr_reader :name
 
-  def initialize(access_key: Rails.application.credentials.ipstack_api_key, connection: nil)
-    @name = "ipstack"
-    @access_key = access_key
-    @connection = connection || build_connection
+  def initialize(provider: ENV.fetch("GEOLOCATION_PROVIDER", "ipstack"))
+    @name = provider
+    @provider = build_provider(provider)
   end
 
   def lookup(query)
-    if access_key.blank?
-      raise Geolocation::Errors::NotConfiguredError, "credentials.ipstack_api_key is not set"
-    end
-
-    response = connection.get(query.to_s, access_key: access_key, output: "json")
-    body = parse_body(response.body)
-    handle_provider_error!(body)
-    normalize(body)
-  rescue Faraday::TimeoutError, Faraday::ConnectionFailed => e
-    raise Geolocation::Errors::ProviderUnavailableError, "ipstack request failed: #{e.message}"
+    provider.lookup(query)
   end
 
   private
 
-  attr_reader :access_key, :connection
+  attr_reader :provider
 
-  def build_connection
-    Faraday.new(url: BASE_URL) do |conn|
-      conn.options.timeout = 5
-      conn.options.open_timeout = 3
-      conn.adapter Faraday.default_adapter
+  def build_provider(provider_name)
+    class_name = PROVIDERS.fetch(provider_name) do
+      raise Geolocation::Errors::NotConfiguredError, "Unknown geolocation provider: #{provider_name.inspect}"
     end
-  end
-
-  def parse_body(raw_body)
-    raw_body.is_a?(String) ? JSON.parse(raw_body) : raw_body
-  rescue JSON::ParserError
-    raise Geolocation::Errors::ProviderError, "ipstack returned an unparseable response"
-  end
-
-  def handle_provider_error!(body)
-    return unless body.is_a?(Hash) && body["success"] == false
-
-    info = body["error"] || {}
-    message = info["info"] || "ipstack rejected the request"
-
-    case info["type"].to_s
-    when "usage_limit_reached", "rate_limit_reached"
-      raise Geolocation::Errors::RateLimitedError, message
-    when "invalid_access_key", "missing_access_key", "inactive_user",
-         "https_access_restricted", "function_access_restricted"
-      raise Geolocation::Errors::NotConfiguredError, message
-    when "invalid_ip_address", "invalid_query", "invalid_url"
-      raise Geolocation::Errors::InvalidQueryError, message
-    else
-      raise Geolocation::Errors::ProviderError, message
-    end
-  end
-
-  def normalize(body)
-    {
-      ip: body["ip"],
-      continent_name: body["continent_name"],
-      country_name: body["country_name"],
-      country_code: body["country_code"],
-      region_name: body["region_name"],
-      region_code: body["region_code"],
-      city: body["city"],
-      zip: body["zip"],
-      latitude: body["latitude"],
-      longitude: body["longitude"],
-      time_zone: body.dig("time_zone", "id"),
-      currency: body.dig("currency", "code"),
-      raw_data: body
-    }
+    class_name.constantize.new
   end
 end

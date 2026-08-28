@@ -1,12 +1,8 @@
 require "test_helper"
 
-class Geolocation::ClientTest < ActiveSupport::TestCase
+class Geolocation::Providers::IpstackTest < ActiveSupport::TestCase
   setup do
-    @client = Geolocation::Client.new(access_key: "test-key")
-  end
-
-  test "exposes its provider name" do
-    assert_equal "ipstack", @client.name
+    @provider = Geolocation::Providers::Ipstack.new(access_key: "test-key")
   end
 
   test "normalizes a successful response" do
@@ -23,7 +19,7 @@ class Geolocation::ClientTest < ActiveSupport::TestCase
         }.to_json
       )
 
-    result = @client.lookup("8.8.8.8")
+    result = @provider.lookup("8.8.8.8")
 
     assert_equal "8.8.8.8", result[:ip]
     assert_equal "United States", result[:country_name]
@@ -41,7 +37,7 @@ class Geolocation::ClientTest < ActiveSupport::TestCase
         body: { success: false, error: { code: 615, type: "invalid_ip_address", info: "Invalid IP address" } }.to_json
       )
 
-    assert_raises(Geolocation::Errors::InvalidQueryError) { @client.lookup("not-a-real-host") }
+    assert_raises(Geolocation::Errors::InvalidQueryError) { @provider.lookup("not-a-real-host") }
   end
 
   test "raises RateLimitedError when the plan's usage limit is reached" do
@@ -53,7 +49,7 @@ class Geolocation::ClientTest < ActiveSupport::TestCase
         body: { success: false, error: { code: 104, type: "usage_limit_reached", info: "Usage limit reached" } }.to_json
       )
 
-    assert_raises(Geolocation::Errors::RateLimitedError) { @client.lookup("8.8.8.8") }
+    assert_raises(Geolocation::Errors::RateLimitedError) { @provider.lookup("8.8.8.8") }
   end
 
   test "raises NotConfiguredError for an invalid access key" do
@@ -65,12 +61,12 @@ class Geolocation::ClientTest < ActiveSupport::TestCase
         body: { success: false, error: { code: 101, type: "invalid_access_key", info: "Invalid access key" } }.to_json
       )
 
-    assert_raises(Geolocation::Errors::NotConfiguredError) { @client.lookup("8.8.8.8") }
+    assert_raises(Geolocation::Errors::NotConfiguredError) { @provider.lookup("8.8.8.8") }
   end
 
   test "raises NotConfiguredError when no access key is configured" do
-    client = Geolocation::Client.new(access_key: nil)
-    assert_raises(Geolocation::Errors::NotConfiguredError) { client.lookup("8.8.8.8") }
+    provider = Geolocation::Providers::Ipstack.new(access_key: nil)
+    assert_raises(Geolocation::Errors::NotConfiguredError) { provider.lookup("8.8.8.8") }
   end
 
   test "raises ProviderUnavailableError on a network timeout" do
@@ -78,6 +74,6 @@ class Geolocation::ClientTest < ActiveSupport::TestCase
       .with(query: hash_including(access_key: "test-key"))
       .to_timeout
 
-    assert_raises(Geolocation::Errors::ProviderUnavailableError) { @client.lookup("8.8.8.8") }
+    assert_raises(Geolocation::Errors::ProviderUnavailableError) { @provider.lookup("8.8.8.8") }
   end
 end

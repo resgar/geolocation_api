@@ -27,6 +27,7 @@ services:
       DATABASE_HOST: db
       DATABASE_USERNAME: postgres
       DATABASE_PASSWORD: postgres
+      GEOLOCATION_PROVIDER: ${GEOLOCATION_PROVIDER:-ipstack}
     depends_on:
       db:
         condition: service_healthy
