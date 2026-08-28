@@ -3,7 +3,6 @@ module Api
     class GeolocationsController < ApplicationController
       before_action :set_geolocation, only: %i[show destroy]
 
-      # GET /api/v1/geolocations
       # GET /api/v1/geolocations?query=8.8.8.8
       def index
         geolocations = Geolocation.order(created_at: :desc)
@@ -18,8 +17,6 @@ module Api
       end
 
       # POST /api/v1/geolocations  { "query": "8.8.8.8" }
-      #
-      # Looks up (or returns the cached record for) an IP address or URL.
       def create
         outcome = Geolocation::LookupService.call(query_param)
 
