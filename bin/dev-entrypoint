@@ -1,0 +1,8 @@
+#!/bin/bash -e
+
+# Keeps installed gems in sync with the Gemfile even though Gemfile.lock is
+# baked into the image at build time but the whole app dir is bind-mounted
+# over it at runtime.
+bundle check || bundle install
+
+exec "$@"

@@ -1,0 +1,101 @@
+require "test_helper"
+
+class Api::V1::GeolocationsControllerTest < ActionDispatch::IntegrationTest
+  setup do
+    Rails.application.credentials.ipstack_api_key = "test-key"
+  end
+
+  def stub_ipstack_success(query, ip: "8.8.8.8")
+    stub_request(:get, "http://api.ipstack.com/#{query}")
+      .with(query: hash_including(access_key: "test-key"))
+      .to_return(
+        status: 200,
+        headers: { "Content-Type" => "application/json" },
+        body: { ip: ip, country_name: "United States", country_code: "US" }.to_json
+      )
+  end
+
+  test "POST create looks up and persists a new geolocation" do
+    stub_ipstack_success("8.8.8.8")
+
+    post api_v1_geolocations_path, params: { query: "8.8.8.8" }, as: :json
+
+    assert_response :created
+    body = JSON.parse(response.body)
+    assert_equal "8.8.8.8", body.dig("data", "attributes", "query")
+    assert_equal "United States", body.dig("data", "attributes", "country_name")
+  end
+
+  test "POST create returns the cached record on a repeat query without re-hitting the provider" do
+    stub_ipstack_success("8.8.8.8")
+
+    post api_v1_geolocations_path, params: { query: "8.8.8.8" }, as: :json
+    assert_response :created
+
+    post api_v1_geolocations_path, params: { query: "8.8.8.8" }, as: :json
+    assert_response :ok
+    assert_requested :get, "http://api.ipstack.com/8.8.8.8", query: hash_including(access_key: "test-key"), times: 1
+  end
+
+  test "POST create returns 422 for an invalid query" do
+    post api_v1_geolocations_path, params: { query: "not a valid query!!" }, as: :json
+
+    assert_response :unprocessable_content
+    assert_equal "422", JSON.parse(response.body)["errors"].first["status"]
+  end
+
+  test "POST create returns 400 when query is missing" do
+    post api_v1_geolocations_path, params: {}, as: :json
+
+    assert_response :bad_request
+  end
+
+  test "POST create returns 502 when the provider is unavailable" do
+    stub_request(:get, "http://api.ipstack.com/8.8.8.8")
+      .with(query: hash_including(access_key: "test-key"))
+      .to_timeout
+
+    post api_v1_geolocations_path, params: { query: "8.8.8.8" }, as: :json
+
+    assert_response :bad_gateway
+  end
+
+  test "GET index lists stored geolocations and supports filtering by query" do
+    Geolocation.create!(query: "8.8.8.8", provider: "ipstack")
+    Geolocation.create!(query: "example.com", provider: "ipstack")
+
+    get api_v1_geolocations_path, as: :json
+    assert_response :success
+    assert_equal 2, JSON.parse(response.body)["data"].size
+
+    get api_v1_geolocations_path, params: { query: "8.8.8.8" }
+    body = JSON.parse(response.body)
+    assert_equal 1, body["data"].size
+    assert_equal "8.8.8.8", body["data"].first.dig("attributes", "query")
+  end
+
+  test "GET show returns a stored geolocation" do
+    geolocation = Geolocation.create!(query: "8.8.8.8", provider: "ipstack")
+
+    get api_v1_geolocation_path(geolocation), as: :json
+
+    assert_response :success
+    assert_equal "8.8.8.8", JSON.parse(response.body).dig("data", "attributes", "query")
+  end
+
+  test "GET show returns 404 for an unknown id" do
+    get api_v1_geolocation_path(id: "does-not-exist"), as: :json
+
+    assert_response :not_found
+  end
+
+  test "DELETE destroy removes the geolocation" do
+    geolocation = Geolocation.create!(query: "8.8.8.8", provider: "ipstack")
+
+    delete api_v1_geolocation_path(geolocation), as: :json
+    assert_response :no_content
+
+    get api_v1_geolocation_path(id: geolocation.id), as: :json
+    assert_response :not_found
+  end
+end
