@@ -23,12 +23,17 @@ directly rather than looked up live):
 docker compose run --rm web bin/rails db:seed
 ```
 
+Every endpoint requires a Bearer token, and live lookups need an ipstack
+access key — both live in Rails encrypted credentials. See
+**Authentication** below to set them before your first request.
+
 ```bash
 curl http://localhost:3000/api/v1/geolocations
-```
+# => 401, no bearer token
 
-A live lookup (`POST`) needs an ipstack access key set in Rails encrypted
-credentials as `ipstack_api_key` (`bin/rails credentials:edit`).
+curl -H "Authorization: Bearer <your api_token>" http://localhost:3000/api/v1/geolocations
+# => 200
+```
 
 ## API
 
@@ -44,6 +49,7 @@ the provider again.
 ```bash
 curl -X POST http://localhost:3000/api/v1/geolocations \
   -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <your api_token>" \
   -d '{"query": "8.8.8.8"}'
 ```
 
@@ -53,6 +59,7 @@ becomes `example.com`):
 ```bash
 curl -X POST http://localhost:3000/api/v1/geolocations \
   -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <your api_token>" \
   -d '{"query": "https://github.com"}'
 ```
 
@@ -91,11 +98,50 @@ Deletes a stored record. Returns `204 No Content`.
   input, a misconfigured key, and a provider outage each fail predictably
   and distinctly instead of surfacing as a generic 500.
 
+## Authentication & secrets
+
+Both secrets live in Rails' **encrypted credentials**
+(`config/credentials.yml.enc`):
+
+- `api_token` — every endpoint requires `Authorization: Bearer <token>`
+  matching this value (see `app/controllers/concerns/api_authentication.rb`).
+  Fails closed: if `api_token` isn't set, every request is rejected — never
+  silently public.
+- `ipstack_api_key` — the ipstack access key used for live lookups (see
+  `app/services/geolocation/client.rb`). Not needed just to browse
+  seeded/cached data, only for `POST` against a query that isn't cached yet.
+
+`config/master.key` (needed to decrypt/edit credentials) is gitignored and
+was **not** pushed with this repo, so a fresh clone can't read the values set
+on the original machine. Set your own:
+
+```bash
+docker compose run --rm web sh -c "rm -f config/credentials.yml.enc && bin/rails credentials:edit"
+```
+
+This generates a brand-new `config/master.key` + `config/credentials.yml.enc`
+for your machine and opens the decrypted YAML in `$EDITOR` (set one, e.g.
+`EDITOR=vim`, if the command errors asking for one). Add:
+
+```yaml
+api_token: whatever-you-want
+ipstack_api_key: your-real-ipstack-key   # get one free at https://ipstack.com/
+```
+
+Save and exit — Rails re-encrypts the file automatically. Use `api_token`'s
+value as your Bearer token from then on. (If you *are* handed the project's
+real `config/master.key` out of band, skip the `rm -f` and just run
+`bin/rails credentials:edit` directly to read/extend the existing file.)
+
 ## Tests
 
 ```bash
 docker compose run --rm -e RAILS_ENV=test web sh -c "bin/rails db:prepare && bin/rails test"
 ```
+
+Controller tests stub `Rails.application.credentials` directly (see
+`test/controllers/api/v1/geolocations_controller_test.rb`), so they don't
+need a real `config/master.key`.
 
 ipstack calls are stubbed with WebMock — no real network calls or API key
 are needed to run the suite.

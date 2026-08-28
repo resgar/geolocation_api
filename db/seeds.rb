@@ -1,6 +1,9 @@
 # Seeds a handful of sample geolocation records so the API has something to
 # return out of the box, without requiring a real ipstack_api_key. Real
 # lookups (POST /api/v1/geolocations) still hit the configured provider.
+#
+# Authentication uses Rails.application.credentials.api_token (see README's
+# Authentication section) — there's nothing to seed for it.
 
 [
   {
