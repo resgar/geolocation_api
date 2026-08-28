@@ -91,13 +91,13 @@ uses (default `ipstack`) — see `docker-compose.yml`'s `environment:` block.
 - `app/models/geolocation.rb` — the persisted record.
 - `app/services/geolocation/query_parser.rb` — decides whether input is an
   IP address or a URL/hostname, and normalizes it.
-- `app/services/geolocation/providers/` — one class per external provider,
+- `app/services/geolocation/adapters/` — one class per external provider,
   each implementing `#lookup(query) -> Hash`. `Base` documents the
   interface; `Ipstack` is the current implementation.
 - `app/services/geolocation/client.rb` — the only class the rest of the app
   talks to. It picks a provider class from `GEOLOCATION_PROVIDER` (default
   `ipstack`). **To add a new provider**: create a class under
-  `Geolocation::Providers` implementing `#lookup`, register it in
+  `Geolocation::Adapters` implementing `#lookup`, register it in
   `Geolocation::Client::PROVIDERS`, and point `GEOLOCATION_PROVIDER` at it.
   Nothing else in the app needs to change.
 - `app/services/geolocation/lookup_service.rb` — orchestrates a request:

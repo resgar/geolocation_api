@@ -1,10 +1,7 @@
 require "faraday"
 
 class Geolocation
-  module Providers
-    # https://ipstack.com/documentation
-    #
-    # Note: the free ipstack plan only supports plain HTTP, not HTTPS.
+  module Adapters
     class Ipstack < Base
       BASE_URL = "http://api.ipstack.com"
 

@@ -1,5 +1,5 @@
 class Geolocation
-  module Providers
+  module Adapters
     # Interface every geolocation provider must implement. To add a new
     # provider: subclass this, implement #lookup, and register it in
     # Geolocation::Client::PROVIDERS.

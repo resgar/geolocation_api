@@ -1,8 +1,8 @@
 require "test_helper"
 
-class Geolocation::Providers::IpstackTest < ActiveSupport::TestCase
+class Geolocation::Adapters::IpstackTest < ActiveSupport::TestCase
   setup do
-    @provider = Geolocation::Providers::Ipstack.new(access_key: "test-key")
+    @provider = Geolocation::Adapters::Ipstack.new(access_key: "test-key")
   end
 
   test "normalizes a successful response" do
@@ -28,7 +28,7 @@ class Geolocation::Providers::IpstackTest < ActiveSupport::TestCase
   end
 
   test "raises NotConfiguredError when no access key is configured" do
-    provider = Geolocation::Providers::Ipstack.new(access_key: nil)
+    provider = Geolocation::Adapters::Ipstack.new(access_key: nil)
     assert_raises(Geolocation::Errors::NotConfiguredError) { provider.lookup("8.8.8.8") }
   end
 
