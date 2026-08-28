@@ -1,6 +1,6 @@
-# Requires a Bearer token matching Rails.application.credentials.api_token
-# (see `bin/rails credentials:edit`). Fails closed: if no api_token is
-# configured, every request is rejected rather than silently left open.
+# Requires a Bearer token matching ENV["API_TOKEN"] (see .env.example).
+# Fails closed: if no API_TOKEN is configured, every request is rejected
+# rather than silently left open.
 module ApiAuthentication
   extend ActiveSupport::Concern
 
@@ -27,6 +27,6 @@ module ApiAuthentication
   end
 
   def configured_api_token
-    Rails.application.credentials.api_token
+    ENV["API_TOKEN"]
   end
 end

@@ -4,8 +4,8 @@ class Api::V1::GeolocationsControllerTest < ActionDispatch::IntegrationTest
   VALID_TOKEN = "test-api-token"
 
   setup do
-    Rails.application.credentials.api_token = VALID_TOKEN
-    Rails.application.credentials.ipstack_api_key = "test-key"
+    ENV["API_TOKEN"] = VALID_TOKEN
+    ENV["IPSTACK_API_KEY"] = "test-key"
   end
 
   def auth_headers(token = VALID_TOKEN)
@@ -112,7 +112,7 @@ class Api::V1::GeolocationsControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "rejects every request when no api_token is configured" do
-    Rails.application.credentials.api_token = nil
+    ENV["API_TOKEN"] = nil
 
     get api_v1_geolocations_path, headers: auth_headers, as: :json
 

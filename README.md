@@ -9,6 +9,13 @@ Postgres. Built with Ruby on Rails 8 (API-only mode).
 Requirements: Docker and Docker Compose.
 
 ```bash
+cp .env.example .env
+```
+
+Fill in the two values in `.env` — see **Authentication** below for what
+they're for.
+
+```bash
 docker compose up --build
 ```
 
@@ -23,15 +30,11 @@ directly rather than looked up live):
 docker compose run --rm web bin/rails db:seed
 ```
 
-Every endpoint requires a Bearer token, and live lookups need an ipstack
-access key — both live in Rails encrypted credentials. See
-**Authentication** below to set them before your first request.
-
 ```bash
 curl http://localhost:3000/api/v1/geolocations
 # => 401, no bearer token
 
-curl -H "Authorization: Bearer <your api_token>" http://localhost:3000/api/v1/geolocations
+curl -H "Authorization: Bearer <your API_TOKEN>" http://localhost:3000/api/v1/geolocations
 # => 200
 ```
 
@@ -83,8 +86,16 @@ Deletes a stored record. Returns `204 No Content`.
 
 ## Configuration
 
-`GEOLOCATION_PROVIDER` picks which provider adapter `Geolocation::Client`
-uses (default `ipstack`) — see `docker-compose.yml`'s `environment:` block.
+All configuration is via environment variables, loaded from `.env`
+(`docker compose` reads it automatically and passes values through as real
+environment variables — see the `environment:` block in
+`docker-compose.yml`):
+
+| Variable               | Purpose                                                   | Default   |
+|-------------------------|------------------------------------------------------------|-----------|
+| `API_TOKEN`             | Bearer token required on every request. No default — fails closed if unset. | *(none)*  |
+| `IPSTACK_API_KEY`       | ipstack access key for live lookups. No default — required for `POST` against an uncached query. | *(none)*  |
+| `GEOLOCATION_PROVIDER`  | Which provider adapter `Geolocation::Client` uses.        | `ipstack` |
 
 ## Architecture
 
@@ -112,38 +123,27 @@ uses (default `ipstack`) — see `docker-compose.yml`'s `environment:` block.
 
 ## Authentication & secrets
 
-Both secrets live in Rails' **encrypted credentials**
-(`config/credentials.yml.enc`):
-
-- `api_token` — every endpoint requires `Authorization: Bearer <token>`
-  matching this value (see `app/controllers/concerns/api_authentication.rb`).
-  Fails closed: if `api_token` isn't set, every request is rejected — never
-  silently public.
-- `ipstack_api_key` — the ipstack access key used for live lookups (see
-  `app/services/geolocation/client.rb`). Not needed just to browse
-  seeded/cached data, only for `POST` against a query that isn't cached yet.
-
-`config/master.key` (needed to decrypt/edit credentials) is gitignored and
-was **not** pushed with this repo, so a fresh clone can't read the values set
-on the original machine. Set your own:
+Both secrets start from `.env`:
 
 ```bash
-docker compose run --rm web sh -c "rm -f config/credentials.yml.enc && bin/rails credentials:edit"
+cp .env.example .env
 ```
 
-This generates a brand-new `config/master.key` + `config/credentials.yml.enc`
-for your machine and opens the decrypted YAML in `$EDITOR` (set one, e.g.
-`EDITOR=vim`, if the command errors asking for one). Add:
-
-```yaml
-api_token: whatever-you-want
-ipstack_api_key: your-real-ipstack-key   # get one free at https://ipstack.com/
+```
+API_TOKEN=whatever-you-want
+IPSTACK_API_KEY=your-real-ipstack-key   # get one free at https://ipstack.com/
 ```
 
-Save and exit — Rails re-encrypts the file automatically. Use `api_token`'s
-value as your Bearer token from then on. (If you *are* handed the project's
-real `config/master.key` out of band, skip the `rm -f` and just run
-`bin/rails credentials:edit` directly to read/extend the existing file.)
+- `API_TOKEN` — every endpoint requires `Authorization: Bearer <token>`
+  matching this value (see `app/controllers/concerns/api_authentication.rb`).
+  Fails closed: if `API_TOKEN` isn't set, every request is rejected — never
+  silently public.
+- `IPSTACK_API_KEY` — the ipstack access key used for live lookups (see
+  `app/services/geolocation/adapters/ipstack.rb`). Not needed just to browse
+  seeded/cached data, only for `POST` against a query that isn't cached yet.
+
+`.env` is gitignored, so it's never committed — each clone/machine sets its
+own values. Use `API_TOKEN`'s value as your Bearer token.
 
 ## Tests
 
@@ -151,9 +151,9 @@ real `config/master.key` out of band, skip the `rm -f` and just run
 docker compose run --rm -e RAILS_ENV=test web sh -c "bin/rails db:prepare && bin/rails test"
 ```
 
-Controller tests stub `Rails.application.credentials` directly (see
-`test/controllers/api/v1/geolocations_controller_test.rb`), so they don't
-need a real `config/master.key`.
+Controller tests set `ENV["API_TOKEN"]`/`ENV["IPSTACK_API_KEY"]` directly
+(see `test/controllers/api/v1/geolocations_controller_test.rb`), so they
+don't need a real `.env`.
 
 ipstack calls are replayed from checked-in VCR cassettes
 (`test/vcr_cassettes/`, one per test, matched on request method + URI) rather
@@ -170,6 +170,10 @@ Requires Ruby (see `.ruby-version`) and a local Postgres.
 
 ```bash
 bundle install
-bin/rails db:prepare
-bin/rails server
+cp .env.example .env   # fill in API_TOKEN / IPSTACK_API_KEY, then export
+                        # them into your shell, e.g.:
+                        # export $(grep -v '^#' .env | xargs)
+DATABASE_HOST=localhost bin/rails db:prepare   # database.yml defaults to
+                                                # docker-compose's "db" host
+DATABASE_HOST=localhost bin/rails server
 ```

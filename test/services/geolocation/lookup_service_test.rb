@@ -2,7 +2,7 @@ require "test_helper"
 
 class Geolocation::LookupServiceTest < ActiveSupport::TestCase
   setup do
-    Rails.application.credentials.ipstack_api_key = "test-key"
+    ENV["IPSTACK_API_KEY"] = "test-key"
   end
 
   test "creates a new record on first lookup" do

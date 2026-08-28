@@ -5,14 +5,14 @@ class Geolocation
     class Ipstack < Base
       BASE_URL = "http://api.ipstack.com"
 
-      def initialize(access_key: Rails.application.credentials.ipstack_api_key, connection: nil)
+      def initialize(access_key: ENV["IPSTACK_API_KEY"], connection: nil)
         @access_key = access_key
         @connection = connection || build_connection
       end
 
       def lookup(query)
         if access_key.blank?
-          raise Geolocation::Errors::NotConfiguredError, "credentials.ipstack_api_key is not set"
+          raise Geolocation::Errors::NotConfiguredError, "IPSTACK_API_KEY is not set"
         end
 
         response = connection.get(query.to_s, access_key: access_key, output: "json")
