@@ -33,21 +33,16 @@ class Geolocation::Providers::IpstackTest < ActiveSupport::TestCase
   end
 
   test "raises ProviderUnavailableError on a network timeout" do
-    # VCR cassettes represent completed HTTP exchanges, not connection
-    # failures, so there's nothing to record/play back here — stub the
-    # timeout directly with WebMock instead, just for this one test. VCR
-    # won't turn off while a cassette is in use, so eject the auto-inserted
-    # one first and put a (never-touched) one back before teardown ejects it.
     VCR.eject_cassette
-    VCR.turn_off!(ignore_cassettes: true)
 
-    stub_request(:get, "http://api.ipstack.com/8.8.8.8")
-      .with(query: hash_including(access_key: "test-key"))
-      .to_timeout
+    VCR.turned_off do
+      stub_request(:get, "http://api.ipstack.com/8.8.8.8")
+        .with(query: hash_including(access_key: "test-key"))
+        .to_timeout
 
-    assert_raises(Geolocation::Errors::ProviderUnavailableError) { @provider.lookup("8.8.8.8") }
+      assert_raises(Geolocation::Errors::ProviderUnavailableError) { @provider.lookup("8.8.8.8") }
+    end
   ensure
-    VCR.turn_on!
     VCR.insert_cassette(name)
   end
 end
