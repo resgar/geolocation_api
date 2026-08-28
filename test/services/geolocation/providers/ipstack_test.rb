@@ -6,19 +6,6 @@ class Geolocation::Providers::IpstackTest < ActiveSupport::TestCase
   end
 
   test "normalizes a successful response" do
-    stub_request(:get, "http://api.ipstack.com/8.8.8.8")
-      .with(query: hash_including(access_key: "test-key"))
-      .to_return(
-        status: 200,
-        headers: { "Content-Type" => "application/json" },
-        body: {
-          ip: "8.8.8.8", country_name: "United States", country_code: "US",
-          region_name: "California", city: "Mountain View", zip: "94043",
-          latitude: 37.4056, longitude: -122.0775,
-          time_zone: { id: "America/Los_Angeles" }, currency: { code: "USD" }
-        }.to_json
-      )
-
     result = @provider.lookup("8.8.8.8")
 
     assert_equal "8.8.8.8", result[:ip]
@@ -29,38 +16,14 @@ class Geolocation::Providers::IpstackTest < ActiveSupport::TestCase
   end
 
   test "raises InvalidQueryError for an unresolvable query" do
-    stub_request(:get, "http://api.ipstack.com/not-a-real-host")
-      .with(query: hash_including(access_key: "test-key"))
-      .to_return(
-        status: 200,
-        headers: { "Content-Type" => "application/json" },
-        body: { success: false, error: { code: 615, type: "invalid_ip_address", info: "Invalid IP address" } }.to_json
-      )
-
     assert_raises(Geolocation::Errors::InvalidQueryError) { @provider.lookup("not-a-real-host") }
   end
 
   test "raises RateLimitedError when the plan's usage limit is reached" do
-    stub_request(:get, "http://api.ipstack.com/8.8.8.8")
-      .with(query: hash_including(access_key: "test-key"))
-      .to_return(
-        status: 200,
-        headers: { "Content-Type" => "application/json" },
-        body: { success: false, error: { code: 104, type: "usage_limit_reached", info: "Usage limit reached" } }.to_json
-      )
-
     assert_raises(Geolocation::Errors::RateLimitedError) { @provider.lookup("8.8.8.8") }
   end
 
   test "raises NotConfiguredError for an invalid access key" do
-    stub_request(:get, "http://api.ipstack.com/8.8.8.8")
-      .with(query: hash_including(access_key: "test-key"))
-      .to_return(
-        status: 200,
-        headers: { "Content-Type" => "application/json" },
-        body: { success: false, error: { code: 101, type: "invalid_access_key", info: "Invalid access key" } }.to_json
-      )
-
     assert_raises(Geolocation::Errors::NotConfiguredError) { @provider.lookup("8.8.8.8") }
   end
 
@@ -70,10 +33,21 @@ class Geolocation::Providers::IpstackTest < ActiveSupport::TestCase
   end
 
   test "raises ProviderUnavailableError on a network timeout" do
+    # VCR cassettes represent completed HTTP exchanges, not connection
+    # failures, so there's nothing to record/play back here — stub the
+    # timeout directly with WebMock instead, just for this one test. VCR
+    # won't turn off while a cassette is in use, so eject the auto-inserted
+    # one first and put a (never-touched) one back before teardown ejects it.
+    VCR.eject_cassette
+    VCR.turn_off!(ignore_cassettes: true)
+
     stub_request(:get, "http://api.ipstack.com/8.8.8.8")
       .with(query: hash_including(access_key: "test-key"))
       .to_timeout
 
     assert_raises(Geolocation::Errors::ProviderUnavailableError) { @provider.lookup("8.8.8.8") }
+  ensure
+    VCR.turn_on!
+    VCR.insert_cassette(name)
   end
 end

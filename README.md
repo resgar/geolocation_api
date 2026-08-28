@@ -155,8 +155,14 @@ Controller tests stub `Rails.application.credentials` directly (see
 `test/controllers/api/v1/geolocations_controller_test.rb`), so they don't
 need a real `config/master.key`.
 
-ipstack calls are stubbed with WebMock — no real network calls or API key
-are needed to run the suite.
+ipstack calls are replayed from checked-in VCR cassettes
+(`test/vcr_cassettes/`, one per test, matched on request method + URI) rather
+than hitting the real API — no real network calls or API key are needed to
+run the suite. VCR's default record mode is `:none`, so an unmatched request
+raises immediately instead of silently falling through to a live HTTP call.
+The tests that simulate a connection timeout are the deliberate exception:
+VCR cassettes represent completed exchanges, not connection failures, so
+those stub the timeout directly with WebMock instead.
 
 ## Running without Docker
 

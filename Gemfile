@@ -53,4 +53,5 @@ end
 
 group :test do
   gem "webmock" # stub HTTP calls to ipstack in tests — no real network calls in specs
+  gem "vcr"     # record/replay real ipstack responses as fixtures for realistic tests
 end

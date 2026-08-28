@@ -12,19 +12,7 @@ class Api::V1::GeolocationsControllerTest < ActionDispatch::IntegrationTest
     token ? { "Authorization" => "Bearer #{token}" } : {}
   end
 
-  def stub_ipstack_success(query, ip: "8.8.8.8")
-    stub_request(:get, "http://api.ipstack.com/#{query}")
-      .with(query: hash_including(access_key: "test-key"))
-      .to_return(
-        status: 200,
-        headers: { "Content-Type" => "application/json" },
-        body: { ip: ip, country_name: "United States", country_code: "US" }.to_json
-      )
-  end
-
   test "POST create looks up and persists a new geolocation" do
-    stub_ipstack_success("8.8.8.8")
-
     post api_v1_geolocations_path, params: { query: "8.8.8.8" }, headers: auth_headers, as: :json
 
     assert_response :created
@@ -34,8 +22,6 @@ class Api::V1::GeolocationsControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "POST create returns the cached record on a repeat query without re-hitting the provider" do
-    stub_ipstack_success("8.8.8.8")
-
     post api_v1_geolocations_path, params: { query: "8.8.8.8" }, headers: auth_headers, as: :json
     assert_response :created
 
@@ -58,6 +44,13 @@ class Api::V1::GeolocationsControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "POST create returns 502 when the provider is unavailable" do
+    # See the equivalent test in ipstack_test.rb: VCR cassettes can't
+    # represent a connection failure, so stub it directly with WebMock. VCR
+    # won't turn off while a cassette is in use, so eject the auto-inserted
+    # one first and put a (never-touched) one back before teardown ejects it.
+    VCR.eject_cassette
+    VCR.turn_off!(ignore_cassettes: true)
+
     stub_request(:get, "http://api.ipstack.com/8.8.8.8")
       .with(query: hash_including(access_key: "test-key"))
       .to_timeout
@@ -65,6 +58,9 @@ class Api::V1::GeolocationsControllerTest < ActionDispatch::IntegrationTest
     post api_v1_geolocations_path, params: { query: "8.8.8.8" }, headers: auth_headers, as: :json
 
     assert_response :bad_gateway
+  ensure
+    VCR.turn_on!
+    VCR.insert_cassette(name)
   end
 
   test "GET index lists stored geolocations and supports filtering by query" do

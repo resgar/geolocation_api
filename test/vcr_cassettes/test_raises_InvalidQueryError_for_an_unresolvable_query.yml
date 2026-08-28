@@ -1,0 +1,26 @@
+---
+http_interactions:
+- request:
+    method: get
+    uri: http://api.ipstack.com/not-a-real-host?access_key=test-key&output=json
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers: {}
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Content-Type:
+      - application/json
+    body:
+      encoding: UTF-8
+      string: |
+        {
+          "success": false,
+          "error": { "code": 615, "type": "invalid_ip_address", "info": "Invalid IP address" }
+        }
+    http_version:
+  recorded_at: Fri, 01 Jan 2027 00:00:00 GMT
+recorded_with: VCR 6.4.0
